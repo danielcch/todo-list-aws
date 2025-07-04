@@ -14,13 +14,13 @@ pipeline {
         }
         stage('Unit Tests') {
             steps {
-                dir('todo-list-aws') {
-                    sh '''
-                        export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        pytest --junitxml=unit-results.xml test/unit
-                    '''
-                }
-                junit 'todo-list-aws/unit-results.xml'
+ 
+                sh '''
+                    export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    pytest --junitxml=unit-results.xml ./test/unit
+                '''
+                
+                junit './unit-results.xml'
             }
         }
     }
