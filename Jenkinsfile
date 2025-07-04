@@ -9,9 +9,7 @@ pipeline {
         }
         
         stage('Unit Tests') {
-            environment {
-                DYNAMODB_TABLE = 'todoTableTest'
-            }
+
             steps {
  
                 sh '''
@@ -20,10 +18,8 @@ pipeline {
                     pip install --break-system-packages -r ./src/requirements.txt
                     pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
-            }post {
-                always {
-                    junit '**/unit-results.xml'
-                }
+                
+                junit '**/unit-results.xml'
             }
         }
     }
