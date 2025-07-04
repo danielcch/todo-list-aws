@@ -4,7 +4,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/danielcch/new-todo-list-aws.git',
+                    url: 'https://github.com/danielcch/todo-list-aws.git',
                     credentialsId: 'GitHub_token'
             }
         }
