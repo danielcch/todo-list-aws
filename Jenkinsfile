@@ -7,13 +7,13 @@ pipeline {
                     credentialsId: 'GitHub_token'
             }
         }
-
+        
         stage('Unit Tests') {
             steps {
  
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pip install -r requirements.txt
+                    pip install --break-system-packages -r requirements.txt
                     pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
                 
