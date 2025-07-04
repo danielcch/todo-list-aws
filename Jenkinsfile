@@ -7,5 +7,15 @@ pipeline {
                     credentialsId: 'GitHub_token'
             }
         }
+        stage('Unit Tests') {
+            steps {
+                dir('todo-list-aws') {
+                    sh '''
+                            export PYTHONPATH=$PYTHONPATH:$(pwd)
+                            pytest --junitxml=unit-results.xml test/unit/
+                        '''
+                }
+            }
+        }
     }
 }
