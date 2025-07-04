@@ -9,7 +9,9 @@ pipeline {
         }
         
         stage('Unit Tests') {
-
+            environment {
+                DYNAMODB_TABLE = 'todoTableTest'
+            }   
             steps {
  
                 sh '''
