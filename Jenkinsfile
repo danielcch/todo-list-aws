@@ -17,7 +17,7 @@ pipeline {
  
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --junitxml=unit-results.xml ./test/unit
+                    pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
                 
                 junit './unit-results.xml'
