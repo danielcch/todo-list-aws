@@ -14,8 +14,6 @@ pipeline {
  
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-
-                    pip install --break-system-packages -r ./src/requirements.txt
                     pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
                 
