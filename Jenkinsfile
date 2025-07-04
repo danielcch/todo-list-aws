@@ -5,7 +5,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/danielcch/new-todo-list-aws.git',
-                    credentialsId: 'github-token'
+                    credentialsId: 'GitHub_token'
             }
         }
     }
