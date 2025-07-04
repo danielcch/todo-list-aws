@@ -13,6 +13,8 @@ pipeline {
  
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    pip uninstall --break-system-packages boto3
+                    pip uninstall --break-system-packages moto
                     pip install --break-system-packages -r ./src/requirements.txt
                     pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
