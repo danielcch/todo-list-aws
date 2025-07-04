@@ -1,5 +1,2 @@
 requests
-boto3
-moto
-pytest
-pytest-cov
+pip install moto[all]
