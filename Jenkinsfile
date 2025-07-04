@@ -12,7 +12,7 @@ pipeline {
 
                 sh '''
                         export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        pytest --junitxml=unit-results.xml test/unit/
+                        pytest --junitxml=unit-results.xml todo-list-aws/test/unit
                     '''
 
                 junit 'todo-list-aws/unit-results.xml'
