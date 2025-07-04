@@ -7,6 +7,11 @@ pipeline {
                     credentialsId: 'GitHub_token'
             }
         }
+        stage('Debug') {
+            steps {
+                sh 'pwd && ls -R'
+            }
+        }
         stage('Unit Tests') {
             steps {
                 dir('todo-list-aws') {
