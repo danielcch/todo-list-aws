@@ -12,6 +12,7 @@ class TestDatabaseFunctions(unittest.TestCase):
     def setUp(self):
         print ('---------------------')
         print ('Start: setUp')
+        os.environ['DYNAMODB_TABLE'] = 'todoTableTest'
         warnings.filterwarnings(
             "ignore",
             category=ResourceWarning,

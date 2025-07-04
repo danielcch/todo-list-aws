@@ -1,3 +1,1 @@
 requests
-boto3
-pip install "moto<4.0"
