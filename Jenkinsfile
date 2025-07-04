@@ -13,6 +13,7 @@ pipeline {
  
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    pip install -r requirements.txt
                     pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
                 
