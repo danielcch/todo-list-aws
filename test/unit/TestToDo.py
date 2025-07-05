@@ -200,6 +200,32 @@ class TestDatabaseFunctions(unittest.TestCase):
         # Testing file functions
         self.assertRaises(TypeError, delete_item("", self.dynamodb))
         print ('End: test_delete_todo_error')
+    
+    def test_create_table_default_client(self):
+        from src.todoList import create_todo_table
+        table = create_todo_table()
+        self.assertIsNotNone(table)
+        self.assertEqual(table.table_status, 'ACTIVE')
+    
+    def test_put_item_invalid_data(self):
+        from src.todoList import put_item
+        with self.assertRaises(Exception):
+            put_item(None, self.dynamodb)
+    
+    def test_get_item_not_found(self):
+        from src.todoList import get_item
+        with self.assertRaises(Exception):
+            get_item("nonexistent-id", self.dynamodb)
+
+    def test_delete_nonexistent_todo(self):
+        from src.todoList import delete_item
+        with self.assertRaises(Exception):
+            delete_item("nonexistent-id", self.dynamodb)
+
+    def test_update_item_all_invalid(self):
+        from src.todoList import update_item
+        with self.assertRaises(Exception):
+            update_item("", "", "", self.dynamodb)
 
 
 
