@@ -67,6 +67,16 @@ pipeline {
                 [threshold: 2, type: 'TOTAL', unstable: false]]
             }
         }
+        stage('Check AWS Credentials') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jenkins-aws'
+                ]]) {
+                    sh 'aws sts get-caller-identity'
+                }
+            }
+        }
     
     }
 }
