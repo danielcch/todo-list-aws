@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sh '''
                     coverage report
-                    coverage html -i
+                    coverage xml
                 '''
             }
         }
