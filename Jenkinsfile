@@ -25,7 +25,14 @@ pipeline {
 
         stage('Coverage Report') {
             steps {
-                recordCoverage tools: [coberturaAdapter('coverage.xml')]
+                recordCoverage tools: [
+                    genericCoverage([
+                        id: 'coverage',
+                        name: 'Cobertura',
+                        reportFile: 'coverage.xml',
+                        parser: 'COBERTURA'
+                    ])
+                ]
             }
         }
     
