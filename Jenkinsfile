@@ -16,7 +16,7 @@ pipeline {
 
                     sh '''
                         export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        pytest --junitxml=unit-results.xml test/unit/TestToDo.py
+                        pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
                     '''
                 }
             }
@@ -25,7 +25,7 @@ pipeline {
                 steps {
                     sh '''
                         export PYTHONPATH=$PYTHONPATH:$(pwd)
-                        python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
+                        python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest ./test/unit/TestToDo.py
                         python3 -m coverage xml
                     '''
                 }
