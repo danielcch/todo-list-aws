@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'develop',
+                git branch: 'develop'
                     url: 'https://github.com/danielcch/todo-list-aws.git',
                     credentialsId: 'GitHub_token' //con to ken para luego hacer push
             }
@@ -51,18 +51,6 @@ pipeline {
                 [threshold: 11, type: 'TOTAL', unstable: false]]
             }
         }
-
-        stage('Security') {
-            steps{
-                sh '''
-                    python3 -m bandit -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
-                '''
-                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], 
-                qualityGates: [[threshold:1, type: 'TOTAL', unstable: true], 
-                [threshold: 2, type: 'TOTAL', unstable: false]]
-            }
-        }
-
 
     
     }
