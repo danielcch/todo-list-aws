@@ -15,7 +15,7 @@ pipeline {
             steps {
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html  --junitxml=unit-results.xml ./test/unit/TestToDo.py
+                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html  --junitxml=unit-results.xml ./test/unit/
                 '''
                 junit '**/unit-results.xml'
             }
