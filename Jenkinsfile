@@ -26,9 +26,10 @@ pipeline {
         stage('Coverage Report') {
             steps {
                 sh '''
-                export PYTHONPATH=$PYTHONPATH:$(pwd)
-                coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
-                coverage xml
+                    echo "Generating coverage report..."
+                    coverage report -m
+                    coverage html
+                    coverage xml
                 '''
             }
         }
