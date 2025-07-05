@@ -3,7 +3,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/danielcch/todo-list-aws.git',
+                git branch: 'develop',
+                    url: 'https://github.com/danielcch/todo-list-aws.git',
                     credentialsId: 'GitHub_token' //con to ken para luego hacer push
             }
         }
