@@ -24,12 +24,15 @@ pipeline {
         }
 
         stage('Coverage Report') {
-            steps {
-                sh '''
-                    coverage report
-                    coverage xml
-                '''
-            }
+        steps {
+            coverage -m
+            publishHTML(target: [
+                reportDir: 'htmlcov',
+                reportFiles: 'index.html',
+                reportName: 'Informe de Cobertura',
+                keepAll: true
+            ])
         }
+    }
     }
 }
