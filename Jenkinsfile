@@ -25,12 +25,10 @@ pipeline {
 
         stage('Coverage Report') {
             steps {
-                publishHTML(target: [
-                    reportDir: 'htmlcov',
-                    reportFiles: 'index.html',
-                    reportName: 'Coverage Report',
-                    keepAll: true
-                ])
+                sh '''
+                    coverage xml -i
+                    coverage html -i
+                '''
             }
         }
     }
