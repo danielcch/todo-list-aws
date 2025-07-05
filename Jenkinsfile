@@ -49,7 +49,7 @@ pipeline {
         stage('Static') {
             steps {
                 sh '''
-                    python3 -m flake8 --exit-zero --format=pylint src > flake8.out || echo "No issues found" > flake8.out
+                    python3 -m flake8 --exit-zero --format=pylint src > flake8.out || echo "No se encontraron problemas" > flake8.out
                 '''
                 recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], 
                 qualityGates: [[threshold:10, type: 'TOTAL', unstable: true], 
@@ -59,15 +59,14 @@ pipeline {
 
         stage('Security') {
             steps{
-                unstash 'code'
                 sh '''
                     python3 -m bandit -r . -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
                 '''
-                stash name:'bandit', includes:'bandit.out'
+                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], 
+                qualityGates: [[threshold:1, type: 'TOTAL', unstable: true], 
+                [threshold: 2, type: 'TOTAL', unstable: false]]
             }
         }
-
-
     
     }
 }
