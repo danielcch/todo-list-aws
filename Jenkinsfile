@@ -31,6 +31,12 @@ pipeline {
                     python3 -m coverage html
                 '''
                 archiveArtifacts artifacts: 'htmlcov/**/*', fingerprint: true
+                publishHTML(target: [
+                    reportDir: 'htmlcov',
+                    reportFiles: 'index.html',
+                    reportName: 'Informe de Cobertura',
+                    keepAll: true
+                ])
             }
         }
     
