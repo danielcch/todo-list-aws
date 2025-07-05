@@ -25,7 +25,6 @@ pipeline {
 
         stage('Coverage Report') {
         steps {
-            coverage -m
             publishHTML(target: [
                 reportDir: 'htmlcov',
                 reportFiles: 'index.html',
