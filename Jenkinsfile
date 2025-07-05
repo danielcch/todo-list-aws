@@ -27,18 +27,30 @@ pipeline {
             }  
             steps {
                 sh '''
-                    python3 -m coverage xml
                     python3 -m coverage html
                 '''
-                archiveArtifacts artifacts: 'htmlcov/**/*', fingerprint: true
                 publishHTML(target: [
                     reportDir: 'htmlcov',
                     reportFiles: 'index.html',
                     reportName: 'Informe de Cobertura',
                     keepAll: true
                 ])
+                
+                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,80', lineCoverageTargets: '100,0,90'
+
             }
         }
+        stage('Static') {
+            steps {
+                sh '''
+                    python3 -m flake8 --exit-zero --format=pylint app > flake8.out
+                '''
+                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], 
+                qualityGates: [[threshold:10, type: 'TOTAL', unstable: true], 
+                [threshold: 11, type: 'TOTAL', unstable: false]]
+            }
+        }
+
     
     }
 }
