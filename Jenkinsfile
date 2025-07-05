@@ -22,5 +22,16 @@ pipeline {
                 junit '**/unit-results.xml' // Publica los resultados de las pruebas unitarias
             }
         }
+
+        stage('Coverage Report') {
+            steps {
+                publishHTML(target: [
+                    reportDir: 'htmlcov',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report',
+                    keepAll: true
+                ])
+            }
+        }
     }
 }
