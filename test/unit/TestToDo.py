@@ -227,6 +227,10 @@ class TestDatabaseFunctions(unittest.TestCase):
         with self.assertRaises(Exception):
             update_item("", "", "", self.dynamodb)
 
+    def test_update_item_all_invalid1(self):
+        from src.todoList import update_item
+        with self.assertRaises(Exception):
+            update_item("", "", "", self.dynamodb)
 
 
 if __name__ == '__main__':
