@@ -27,6 +27,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Generating coverage report..."
+                    coverage run -m pytest --cov=src --cov-report=xml --cov-report=html ./test/unit/TestToDo.py
                     coverage report -m
                     coverage html
                     coverage xml
