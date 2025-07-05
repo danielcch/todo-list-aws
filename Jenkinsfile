@@ -26,7 +26,7 @@ pipeline {
         stage('Coverage Report') {
             steps {
                 sh '''
-                    coverage xml -i
+                    coverage report
                     coverage html -i
                 '''
             }
