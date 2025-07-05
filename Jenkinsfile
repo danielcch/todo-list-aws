@@ -36,7 +36,7 @@ pipeline {
                     keepAll: true
                 ])
                 
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '0,0,0', lineCoverageTargets: '0,0,0'
+                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,40', lineCoverageTargets: '100,0,40'
 
             }
         }
