@@ -24,13 +24,9 @@ pipeline {
         }
 
         stage('Coverage Report') {
-        steps {
-            publishHTML(target: [
-                reportDir: 'htmlcov',
-                reportFiles: 'index.html',
-                reportName: 'Informe de Cobertura',
-                keepAll: true
-            ])
+            steps {
+                recordCoverage tools: [coberturaAdapter('coverage.xml')]
+            }
         }
     }
     }
