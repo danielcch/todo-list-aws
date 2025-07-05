@@ -26,11 +26,9 @@ pipeline {
         stage('Coverage Report') {
             steps {
                 sh '''
-                    echo "Generating coverage report..."
-                    coverage run -m pytest --cov=src --cov-report=xml --cov-report=html ./test/unit/TestToDo.py
-                    coverage report -m
-                    coverage html
-                    coverage xml
+                    export PYTHONPATH=$PYTHONPATH:$(pwd)
+                    python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
+                    python3 -m coverage xml
                 '''
             }
         }
