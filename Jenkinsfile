@@ -11,11 +11,11 @@ pipeline {
         stage('Unit Tests') {
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
-            }   
+            }
             steps {
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --junitxml=unit-results.xml ./test/unit/TestToDo.py
+                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html --junitxml=unit-results.xml ./test/unit/TestToDo.py
                 '''
                 junit '**/unit-results.xml'
             }
@@ -27,8 +27,6 @@ pipeline {
             }  
             steps {
                 sh '''
-                    export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    python3 -m coverage run --branch --source=src --omit=src/__init__.py,src/api.py -m pytest ./test/unit/TestToDo.py
                     python3 -m coverage xml
                     python3 -m coverage html
                 '''
