@@ -28,6 +28,6 @@ pipeline {
                 recordCoverage tools: [coberturaAdapter('coverage.xml')]
             }
         }
-    }
+    
     }
 }
