@@ -12,26 +12,37 @@ pipeline {
             environment {
                 DYNAMODB_TABLE = 'todoTableTest' // Nombre de la tabla DynamoDB para pruebas unitarias
             }   
-            steps {
- 
-                sh '''
-                    export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --cov=src --cov-report=xml --cov-report=html --junitxml=unit-results.xml ./test/unit/TestToDo.py
-                '''//requests.txt las librerias boto3nmoto requests las tienen los nodo pq se dijo de no hacer entonrno virtual
-                
-                junit '**/unit-results.xml' // Publica los resultados de las pruebas unitarias
-            }
-        }
 
-        stage('Coverage Report') {
-            steps {
-                sh '''
-                    export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
-                    python3 -m coverage xml
-                '''
+                agent { label 'agente2' }
+                steps {
+                    unstash 'code'
+                    sh 'whoami'
+                    sh 'hostname'
+                    sh 'echo $WORKSPACE'
+                    sh '''
+                        export PYTHONPATH=$PYTHONPATH:$(pwd)
+                        pytest --junitxml=unit-results.xml test/unit/
+                    '''
+                    stash name:'unittest', includes:'unit-results.xml'
+                }
             }
-        }
+
+            stage('Coverage') {
+                agent { label 'agente3' }
+                steps {
+
+                    unstash 'code'
+                    sh 'whoami'
+                    sh 'hostname'
+                    sh 'echo $WORKSPACE'
+                    sh '''
+                        export PYTHONPATH=$PYTHONPATH:$(pwd)
+                        python3 -m coverage run --branch --source=app --omit=app/__init__.py,app/api.py -m pytest test/unit
+                        python3 -m coverage xml
+                    '''
+                    stash name:'coverage', includes:'coverage.xml, .coverage'
+                }
+            }
     
     }
 }
