@@ -106,6 +106,7 @@ pipeline {
                                 aws cloudformation describe-stacks \
                                     --stack-name staging-todo-list-aws \
                                     --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                                    --region us-east-1 \
                                     --output text
                             """,
                             returnStdout: true
