@@ -80,7 +80,7 @@ pipeline {
 
                         # Validate
                         echo 'sam validate'
-                        sam validate
+                        sam validate --region us-east-1
 
                         # Deploy
                         echo 'sam deploy en entorno: staging'
