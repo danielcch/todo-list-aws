@@ -112,14 +112,15 @@ pipeline {
                     withEnv(["BASE_URL=${apiUrl}"]) {
                         echo "Ejecutando tests de integración contra ${apiUrl}"
                         sh '''
-                            pytest --junitxml=integration-results.xml test/integration/todoApiTest.py
+                            pytest --junitxml=integration-results.xml ./test/integration/todoApiTest.py
                         '''
+
                     }
                 }
             }
             post {
                 always {
-                    junit 'integration-results.xml'
+                    junit '**/integration-results.xml'
                 }
                 failure {
                     echo "Tests de integración fallidos"
