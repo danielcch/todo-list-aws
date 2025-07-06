@@ -1,70 +1,26 @@
 pipeline {
     agent { label 'agente1' }
+    
+    triggers {
+        // Se dispara automáticamente cuando hay un push a master
+        pollSCM('H/5 * * * *')
+    }
+
+    environment {
+        AWS_DEFAULT_REGION = 'us-east-1'
+    }
+
     stages {
-        stage('Clean Workspace') {
+        stage('Checkout Master') {
             steps {
-                cleanWs()
-            }
-        }
-        stage('Checkout') {
-            steps {
-                git branch: 'develop',
-                    url: 'https://github.com/danielcch/todo-list-aws.git',
-                    credentialsId: 'GitHub_token' //con to ken para luego hacer push
-            }
-        }
-
-        stage('Unit Tests') {
-            environment {
-                DYNAMODB_TABLE = 'todoTableTest'
-            }
-            steps {
-                sh '''
-                    export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html  --junitxml=unit-results.xml ./test/unit/Test*.py
-                '''
-                junit '**/unit-results.xml'
-            }
-        }
-
-        stage('Coverage') {
-            environment {
-                DYNAMODB_TABLE = 'todoTableTest'
-            }  
-            steps {
-                sh '''
-                    python3 -m coverage html
-                '''
-                publishHTML(target: [
-                    reportDir: 'htmlcov',
-                    reportFiles: 'index.html',
-                    reportName: 'Informe de Cobertura',
-                    keepAll: true
-                ])
-                
-                cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,40', lineCoverageTargets: '100,0,40'
-
-            }
-        }
-        stage('Static') {
-            steps {
-                sh '''
-                    python3 -m flake8 --exit-zero --format=pylint src > flake8.out || echo "No se encontraron problemas" > flake8.out
-                '''
-                recordIssues tools: [flake8(name: 'Flake8', pattern: 'flake8.out')], 
-                qualityGates: [[threshold:10, type: 'TOTAL', unstable: true], 
-                [threshold: 11, type: 'TOTAL', unstable: false]]
-            }
-        }
-
-        stage('Security') {
-            steps{
-                sh '''
-                    python3 -m bandit -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
-                '''
-                recordIssues tools: [pyLint(name: 'Bandit', pattern: 'bandit.out')], 
-                qualityGates: [[threshold:1, type: 'TOTAL', unstable: true], 
-                [threshold: 2, type: 'TOTAL', unstable: false]]
+                checkout scm
+                script {
+                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    echo "Rama actual detectada: ${branchName}"
+                    if (branchName != "master") {
+                        error("No estamos en master, se para el pipeline.")
+                    }
+                }
             }
         }
         stage('AWS SAM DEPLOY') {
@@ -83,113 +39,24 @@ pipeline {
                         sam validate --region us-east-1
 
                         # Deploy
-                        echo 'sam deploy en entorno: staging'
+                        echo 'sam deploy en entorno: production'
                         sam deploy \
-                            --config-env staging \
+                            --config-env production \
                             --no-confirm-changeset \
                             --no-fail-on-empty-changeset
                     '''
                 }
             }
+        
         }
+    }
 
-        stage('Integration Tests') {
-            steps {
-                script {
-                    withCredentials([
-                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
-                        string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
-                    ]) {
-                        echo "Obteniendo URL del API Gateway desplegado..."
-                        def baseUrl = sh(
-                            script: """
-                                aws cloudformation describe-stacks \
-                                    --stack-name staging-todo-list-aws \
-                                    --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
-                                    --region us-east-1 \
-                                    --output text
-                            """,
-                            returnStdout: true
-                        ).trim()
-
-                        echo "BASE_URL obtenida: ${baseUrl}"
-
-                        withEnv(["BASE_URL=${baseUrl}"]) {
-                            echo "Ejecutando tests de integración contra ${baseUrl}"
-                            sh '''
-                                pytest --junitxml=integration-results.xml test/integration/todoApiTest.py || exit 1
-                            '''
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    script {
-                        if (fileExists('integration-results.xml')) {
-                            junit 'integration-results.xml'
-                        } else {
-                            echo "integration-results.xml no encontrado. Saltando publicación."
-                        }
-                    }
-                }
-                failure {
-                    echo "Tests de integración fallidos. Abortando pipeline."
-                    error("Fase de integración fallida")
-                }
-            }
+    post {
+        success {
+            echo "Produccion desplegada correctamente desde master"
         }
-
-        stage('Promote to Production') {
-            steps {
-                script {
-                    // Detectar la rama actual dinámicamente
-                    def branchName = sh(
-                        script: 'git rev-parse --abbrev-ref HEAD',
-                        returnStdout: true
-                    ).trim()
-                    echo "Rama actual detectada: ${branchName}"
-
-                    if (branchName == 'develop') {
-                        echo "Rama develop detectada, ejecutando Promote..."
-
-                        withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                            sh '''
-                                echo "Haciendo merge de develop en master..."
-
-                                # Configura user Git
-                                git config user.name "danielcch"
-                                git config user.email "daniel.camacho215@comunidadunir.net"
-
-                                # DESCARTA cambios locales y limpia archivos no versionados
-                                git reset --hard
-                                git clean -fd
-                                
-                                # Cambia a master
-                                git checkout master
-
-                                # Trae los últimos cambios
-                                git pull origin master
-
-                                # Merge con estrategia que prioriza master en conflictos
-                                git merge --strategy=recursive -X theirs develop || true
-
-                                # Resuelve conflictos del Jenkinsfile priorizando master
-                                git checkout --theirs Jenkinsfile || true
-                                git add Jenkinsfile
-
-                                # Commit merge (solo si hay cambios)
-                                git diff --cached --quiet || git commit -m "Merge develop into master [ci skip]"
-
-                                # Push a master usando credenciales
-                                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
-                            '''
-                        }
-                    } else {
-                        echo "No estamos en la rama develop. Promote saltado."
-                    }
-                }
-            }
+        failure {
+            echo "Error en el despliegue de produccion"
         }
     }
 }
