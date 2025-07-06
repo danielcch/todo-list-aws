@@ -161,6 +161,10 @@ pipeline {
                                 git config user.name "danielcch"
                                 git config user.email "daniel.camacho215@comunidadunir.net"
 
+                                # DESCARTA cambios locales y limpia archivos no versionados
+                                git reset --hard
+                                git clean -fd
+                                
                                 # Cambia a master
                                 git checkout master
 
