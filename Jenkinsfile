@@ -140,5 +140,41 @@ pipeline {
             }
         }
 
+        stage('Promote to Production') {
+            when {
+                branch 'develop' // solo si vienes de develop
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                    sh '''
+                        echo "Haciendo merge de develop en master..."
+
+                        # Configura user Git
+                        git config user.name "danielcch"
+                        git config user.email "daniel.camacho215@comunidadunir.net"
+
+                        # Cambia a master
+                        git checkout master
+
+                        # Trae los últimos cambios
+                        git pull origin master
+
+                        # Merge con estrategia que prioriza master en conflictos
+                        git merge --strategy=recursive -X theirs develop || true
+
+                        # Resuelve conflictos del Jenkinsfile priorizando master
+                        git checkout --theirs Jenkinsfile || true
+                        git add Jenkinsfile
+
+                        # Commit merge
+                        git commit -m "🔀 Merge develop into master [ci skip]" || true
+
+                        # Push a master usando credenciales
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/your-org/your-repo.git HEAD:master
+                    '''
+                }
+            }
+        }
+
     }
 }
