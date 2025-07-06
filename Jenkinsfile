@@ -141,40 +141,51 @@ pipeline {
         }
 
         stage('Promote to Production') {
-            when {
-                branch 'develop' // solo si vienes de develop
-            }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                    sh '''
-                        echo "Haciendo merge de develop en master..."
+                script {
+                    // Detectar la rama actual dinámicamente
+                    def branchName = sh(
+                        script: 'git rev-parse --abbrev-ref HEAD',
+                        returnStdout: true
+                    ).trim()
+                    echo "Rama actual detectada: ${branchName}"
 
-                        # Configura user Git
-                        git config user.name "danielcch"
-                        git config user.email "daniel.camacho215@comunidadunir.net"
+                    if (branchName == 'develop') {
+                        echo "Rama develop detectada, ejecutando Promote..."
 
-                        # Cambia a master
-                        git checkout master
+                        withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                            sh '''
+                                echo "Haciendo merge de develop en master..."
 
-                        # Trae los últimos cambios
-                        git pull origin master
+                                # Configura user Git
+                                git config user.name "danielcch"
+                                git config user.email "daniel.camacho215@comunidadunir.net"
 
-                        # Merge con estrategia que prioriza master en conflictos
-                        git merge --strategy=recursive -X theirs develop || true
+                                # Cambia a master
+                                git checkout master
 
-                        # Resuelve conflictos del Jenkinsfile priorizando master
-                        git checkout --theirs Jenkinsfile || true
-                        git add Jenkinsfile
+                                # Trae los últimos cambios
+                                git pull origin master
 
-                        # Commit merge
-                        git commit -m "🔀 Merge develop into master [ci skip]" || true
+                                # Merge con estrategia que prioriza master en conflictos
+                                git merge --strategy=recursive -X theirs develop || true
 
-                        # Push a master usando credenciales
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
-                    '''
+                                # Resuelve conflictos del Jenkinsfile priorizando master
+                                git checkout --theirs Jenkinsfile || true
+                                git add Jenkinsfile
+
+                                # Commit merge (solo si hay cambios)
+                                git diff --cached --quiet || git commit -m "Merge develop into master [ci skip]"
+
+                                # Push a master usando credenciales
+                                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
+                            '''
+                        }
+                    } else {
+                        echo "No estamos en la rama develop. Promote saltado."
+                    }
                 }
             }
         }
-
     }
 }
