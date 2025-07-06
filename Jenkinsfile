@@ -96,36 +96,44 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 script {
-                    echo "obtener url stack desplegado"
-                    def apiUrl = sh(
-                        script: '''
-                            aws cloudformation describe-stacks \
-                                --stack-name staging-todo-list-aws \
-                                --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
-                                --region us-east-1 \
-                                --output text
-                        ''',
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
+                        string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
+                    ]) {
+                        echo "Obteniendo URL del API Gateway desplegado..."
+                        def baseUrl = sh(
+                            script: """
+                                aws cloudformation describe-stacks \
+                                    --stack-name staging-todo-list-aws \
+                                    --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                                    --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
 
-                        returnStdout: true
-                    ).trim()
+                        echo "BASE_URL obtenida: ${baseUrl}"
 
-                    echo "URL obtenida: ${apiUrl}"
-
-                    withEnv(["BASE_URL=${apiUrl}"]) {
-                        echo "Ejecutando tests de integración contra ${apiUrl}"
-                        sh '''
-                            pytest --junitxml=integration-results.xml ./test/integration/todoApiTest.py
-                        '''
-
+                        withEnv(["BASE_URL=${baseUrl}"]) {
+                            echo "Ejecutando tests de integración contra ${baseUrl}"
+                            sh '''
+                                pytest --junitxml=integration-results.xml test/integration/todoApiTest.py || exit 1
+                            '''
+                        }
                     }
                 }
             }
             post {
                 always {
-                    junit '**/integration-results.xml'
+                    script {
+                        if (fileExists('integration-results.xml')) {
+                            junit 'integration-results.xml'
+                        } else {
+                            echo "integration-results.xml no encontrado. Saltando publicación."
+                        }
+                    }
                 }
                 failure {
-                    echo "Tests de integración fallidos"
+                    echo "Tests de integración fallidos. Abortando pipeline."
                     error("Fase de integración fallida")
                 }
             }
