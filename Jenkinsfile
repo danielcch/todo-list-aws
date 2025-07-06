@@ -21,7 +21,7 @@ pipeline {
             }
         }
 
-        stage('Unit Tests') {
+        stage('Etapa test unitario') {
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
             }
@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('Coverage') {
+        stage('Etapa cobertura') {
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
             }
@@ -64,7 +64,7 @@ pipeline {
                 }
             }
         }
-        stage('Static Analysis') {
+        stage('Etapa analisis estatico') {
             steps {
                 echo 'Analisis codigo estatico (flake8)...'
                 sh '''
@@ -81,9 +81,9 @@ pipeline {
             }
         }
 
-        stage('Analisis seguridad (Bandit)... ) {
+        stage('Etapa analisis seguridad') {
             steps {
-                echo 'Running security scan (bandit)...'
+                echo 'Lanzando escaneo con bandit...'
                 sh '''
                     python3 -m bandit -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
                 '''
@@ -97,7 +97,7 @@ pipeline {
                 }
             }
         }
-        stage('AWS SAM Deploy') {
+        stage('Etapa AWS SAM Deploy') {
             steps {
                 echo 'Desplegando con SAM AWS...'
                 withCredentials([
@@ -116,7 +116,7 @@ pipeline {
             }
         }
 
-        stage('Test de integracion') {
+        stage('Estata test de integracion') {
             steps {
                 echo 'Lanzando test de integracion...'
                 script {
@@ -165,7 +165,7 @@ pipeline {
             }
         }
 
-        stage('Etapa Promote') {
+        stage('Etapa promote') {
             steps {
                 echo 'Promote a master (mergear develop a master)...'
                 script {
