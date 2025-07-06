@@ -92,5 +92,41 @@ pipeline {
                 }
             }
         }
+
+        stage('Integration Tests') {
+            steps {
+                script {
+                    echo "obtener url stack desplegado"
+                    def apiUrl = sh(
+                        script: '''
+                            aws cloudformation describe-stacks \
+                                --stack-name staging-todo-list-aws \
+                                --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                                --output text
+                        ''',
+                        returnStdout: true
+                    ).trim()
+
+                    echo "URL obtenida: ${apiUrl}"
+
+                    withEnv(["BASE_URL=${apiUrl}"]) {
+                        echo "Ejecutando tests de integración contra ${apiUrl}"
+                        sh '''
+                            pytest --junitxml=integration-results.xml test/integration/todoApiTest.py
+                        '''
+                    }
+                }
+            }
+            post {
+                always {
+                    junit 'integration-results.xml'
+                }
+                failure {
+                    echo "Tests de integración fallidos"
+                    error("Fase de integración fallida")
+                }
+            }
+        }
+
     }
 }
