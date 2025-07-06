@@ -43,6 +43,52 @@ pipeline {
             }
         
         }
+        stage('Integration Tests') {
+            steps {
+                script {
+                    withCredentials([
+                        [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
+                        string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
+                    ]) {
+                        echo "Obteniendo URL del API Gateway desplegado..."
+                        def baseUrl = sh(
+                            script: """
+                                aws cloudformation describe-stacks \
+                                    --stack-name staging-todo-list-aws \
+                                    --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
+                                    --region us-east-1 \
+                                    --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        echo "BASE_URL obtenida: ${baseUrl}"
+
+                        withEnv(["BASE_URL=${baseUrl}"]) {
+                            echo "Ejecutando tests de integración contra ${baseUrl}"
+                            sh '''
+                                pytest --junitxml=integration-results.xml test/integration/todoApiTest.py || exit 1
+                            '''
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    script {
+                        if (fileExists('integration-results.xml')) {
+                            junit 'integration-results.xml'
+                        } else {
+                            echo "integration-results.xml no encontrado. Saltando publicación."
+                        }
+                    }
+                }
+                failure {
+                    echo "Tests de integración fallidos. Abortando pipeline."
+                    error("Fase de integración fallida")
+                }
+            }
+        }
     }
 
     post {
