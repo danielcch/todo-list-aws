@@ -67,18 +67,30 @@ pipeline {
                 [threshold: 2, type: 'TOTAL', unstable: false]]
             }
         }
-        stage('Check AWS Credentials') {
+        stage('AWS SAM DEPLOY') {
             steps {
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
                     string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
                 ]) {
-                    sh 'aws sts get-caller-identity'
+                    sh '''
+                        # Build
+                        echo 'sam build'
+                        sam build
+
+                        # Validate
+                        echo 'sam validate'
+                        sam validate
+
+                        # Deploy
+                        echo 'sam deploy en entorno: staging'
+                        sam deploy \
+                            --config-env staging \
+                            --no-confirm-changeset \
+                            --no-fail-on-empty-changeset
+                    '''
                 }
             }
         }
-
-
-    
     }
 }
