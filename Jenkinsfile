@@ -1,16 +1,23 @@
 pipeline {
     agent { label 'agente1' }
     stages {
-        stage('Clean Workspace') {
+        stage('Limpiando Workspace') {
             steps {
+                echo 'Cleaning workspace...'
                 cleanWs()
             }
         }
         stage('Checkout') {
             steps {
-                git branch: 'develop',
-                    url: 'https://github.com/danielcch/todo-list-aws.git',
-                    credentialsId: 'GitHub_token' //con to ken para luego hacer push
+                echo 'Checkout...'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/develop']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/danielcch/todo-list-aws.git',
+                        credentialsId: 'GitHub_token'
+                    ]]
+                ])
             }
         }
 
@@ -19,35 +26,47 @@ pipeline {
                 DYNAMODB_TABLE = 'todoTableTest'
             }
             steps {
+                echo 'Lanzando test unitarios...'
                 sh '''
                     export PYTHONPATH=$PYTHONPATH:$(pwd)
-                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html  --junitxml=unit-results.xml ./test/unit/Test*.py
+                    pytest --cov=src --cov-report=term --cov-report=xml --cov-report=html --junitxml=unit-results.xml ./test/unit/Test*.py
                 '''
                 junit '**/unit-results.xml'
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/unit-results.xml', fingerprint: true
+                }
+                failure {
+                    echo 'Unit tests failed.'
+                }
             }
         }
 
         stage('Coverage') {
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
-            }  
+            }
             steps {
-                sh '''
-                    python3 -m coverage html
-                '''
+                echo 'Generando cobertura...'
+                sh 'python3 -m coverage html'
                 publishHTML(target: [
                     reportDir: 'htmlcov',
                     reportFiles: 'index.html',
                     reportName: 'Informe de Cobertura',
                     keepAll: true
                 ])
-                
                 cobertura coberturaReportFile: 'coverage.xml', conditionalCoverageTargets: '100,0,40', lineCoverageTargets: '100,0,40'
-
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'coverage.xml', fingerprint: true
+                }
             }
         }
-        stage('Static') {
+        stage('Static Analysis') {
             steps {
+                echo 'Analisis codigo estatico (flake8)...'
                 sh '''
                     python3 -m flake8 --exit-zero --format=pylint src > flake8.out || echo "No se encontraron problemas" > flake8.out
                 '''
@@ -55,10 +74,16 @@ pipeline {
                 qualityGates: [[threshold:10, type: 'TOTAL', unstable: true], 
                 [threshold: 11, type: 'TOTAL', unstable: false]]
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'flake8.out', fingerprint: true
+                }
+            }
         }
 
-        stage('Security') {
-            steps{
+        stage('Analisis seguridad (Bandit)... ) {
+            steps {
+                echo 'Running security scan (bandit)...'
                 sh '''
                     python3 -m bandit -r src -f custom -o bandit.out --msg-template "{abspath}:{line}: {severity}: {test_id}: {msg}" || true
                 '''
@@ -66,24 +91,22 @@ pipeline {
                 qualityGates: [[threshold:1, type: 'TOTAL', unstable: true], 
                 [threshold: 2, type: 'TOTAL', unstable: false]]
             }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'bandit.out', fingerprint: true
+                }
+            }
         }
-        stage('AWS SAM DEPLOY') {
+        stage('AWS SAM Deploy') {
             steps {
+                echo 'Desplegando con SAM AWS...'
                 withCredentials([
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
                     string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
                 ]) {
                     sh '''
-                        # Build
-                        echo 'sam build'
                         sam build
-
-                        # Validate
-                        echo 'sam validate'
                         sam validate --region us-east-1
-
-                        # Deploy
-                        echo 'sam deploy en entorno: staging'
                         sam deploy \
                             --config-env staging \
                             --no-confirm-changeset \
@@ -93,26 +116,27 @@ pipeline {
             }
         }
 
-        stage('Integration Tests') {
+        stage('Test de integracion') {
             steps {
+                echo 'Lanzando test de integracion...'
                 script {
                     withCredentials([
                         [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
                         string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
                     ]) {
-                        echo "Obteniendo URL del API Gateway desplegado..."
+                        echo "Obteniendo URL stack generado..."
                         def baseUrl = sh(
-                            script: """
+                            script: '''
                                 aws cloudformation describe-stacks \
                                     --stack-name staging-todo-list-aws \
                                     --query "Stacks[0].Outputs[?OutputKey=='BaseUrlApi'].OutputValue" \
                                     --region us-east-1 \
                                     --output text
-                            """,
+                            ''',
                             returnStdout: true
                         ).trim()
 
-                        echo "BASE_URL obtenida: ${baseUrl}"
+                        echo "BASE_URL: ${baseUrl}"
 
                         withEnv(["BASE_URL=${baseUrl}"]) {
                             echo "Ejecutando tests de integración contra ${baseUrl}"
@@ -128,22 +152,24 @@ pipeline {
                     script {
                         if (fileExists('integration-results.xml')) {
                             junit 'integration-results.xml'
+                            archiveArtifacts artifacts: 'integration-results.xml', fingerprint: true
                         } else {
-                            echo "integration-results.xml no encontrado. Saltando publicación."
+                            echo "integration-results.xml no encontrado, no se publica."
                         }
                     }
                 }
                 failure {
-                    echo "Tests de integración fallidos. Abortando pipeline."
-                    error("Fase de integración fallida")
+                    echo "Tests de integracion fallidos. Abortando pipeline."
+                    error("Fase de integracion fallida")
                 }
             }
         }
 
-        stage('Promote to Production') {
+        stage('Etapa Promote') {
             steps {
+                echo 'Promote a master (mergear develop a master)...'
                 script {
-                    // Detectar la rama actual dinámicamente
+                    // Detectar la rama actual dinamicamente
                     def branchName = sh(
                         script: 'git rev-parse --abbrev-ref HEAD',
                         returnStdout: true
@@ -155,7 +181,7 @@ pipeline {
 
                         withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh '''
-                                echo "Haciendo merge de develop en master..."
+                                echo "Haciendo merge de develop a master..."
 
                                 # Configura user Git
                                 git config user.name "danielcch"
@@ -179,7 +205,7 @@ pipeline {
                                 git add Jenkinsfile
 
                                 # Commit merge (solo si hay cambios)
-                                git diff --cached --quiet || git commit -m "Merge develop into master [ci skip]"
+                                git diff --cached --quiet || git commit -m "Mergeo de develop a master [ci skip]"
 
                                 # Push a master usando credenciales
                                 git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
@@ -190,6 +216,15 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+    post {
+        always {
+            echo 'Pipeline terminado.'
+            cleanWs()
+        }
+        failure {
+            echo 'Fallo Pipeline.'
         }
     }
 }
