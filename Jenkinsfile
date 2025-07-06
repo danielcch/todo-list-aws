@@ -170,7 +170,7 @@ pipeline {
                         git commit -m "🔀 Merge develop into master [ci skip]" || true
 
                         # Push a master usando credenciales
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/your-org/your-repo.git HEAD:master
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
                     '''
                 }
             }
