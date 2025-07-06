@@ -9,15 +9,9 @@ pipeline {
         }
         stage('Checkout') {
             steps {
-                echo 'Checkout...'
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/develop']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/danielcch/todo-list-aws.git',
-                        credentialsId: 'GitHub_token'
-                    ]]
-                ])
+                git branch: 'develop',
+                    url: 'https://github.com/danielcch/todo-list-aws.git',
+                    credentialsId: 'GitHub_token' //con to ken para luego hacer push
             }
         }
 
@@ -169,7 +163,7 @@ pipeline {
             steps {
                 echo 'Promote a master (mergear develop a master)...'
                 script {
-                    // Detectar la rama actual dinamicamente
+                    // Detectar la rama actual dinámicamente
                     def branchName = sh(
                         script: 'git rev-parse --abbrev-ref HEAD',
                         returnStdout: true
