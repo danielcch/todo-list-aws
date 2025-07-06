@@ -159,9 +159,8 @@ pipeline {
             }
         }
 
-        stage('Etapa promote') {
+        stage('Promote a Production') {
             steps {
-                echo 'Promote a master (mergear develop a master)...'
                 script {
                     // Detectar la rama actual dinámicamente
                     def branchName = sh(
@@ -175,7 +174,7 @@ pipeline {
 
                         withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh '''
-                                echo "Haciendo merge de develop a master..."
+                                echo "Haciendo merge de develop en master..."
 
                                 # Configura user Git
                                 git config user.name "danielcch"
@@ -199,7 +198,7 @@ pipeline {
                                 git add Jenkinsfile
 
                                 # Commit merge (solo si hay cambios)
-                                git diff --cached --quiet || git commit -m "Mergeo de develop a master [ci skip]"
+                                git diff --cached --quiet || git commit -m "Merge develop into master [ci skip]"
 
                                 # Push a master usando credenciales
                                 git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
