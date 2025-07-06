@@ -39,66 +39,45 @@ pipeline {
                 }
             }
         }
-    }
-
-    post {
-        success {
-            echo 'Despliegue en producción completado correctamente.'
-        }
 
         stage('Promote a Production') {
+            when {
+                branch 'master'
+            }
             steps {
+                echo "Promoviendo a producción..."
                 script {
-                    // Detectar la rama actual dinámicamente
-                    def branchName = sh(
-                        script: 'git rev-parse --abbrev-ref HEAD',
-                        returnStdout: true
-                    ).trim()
-                    echo "Rama actual detectada: ${branchName}"
-
-                    if (branchName == 'develop') {
-                        echo "Rama develop detectada, ejecutando Promote..."
-
-                        withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                            sh '''
-                                echo "Haciendo merge de develop en master..."
-
-                                # Configura user Git
-                                git config user.name "danielcch"
-                                git config user.email "daniel.camacho215@comunidadunir.net"
-
-                                # DESCARTA cambios locales y limpia archivos no versionados
-                                git reset --hard
-                                git clean -fd
-                                
-                                # Cambia a master
-                                git checkout master
-
-                                # Trae los últimos cambios
-                                git pull origin master
-
-                                # Merge con estrategia que prioriza master en conflictos
-                                git merge --strategy=recursive -X theirs develop || true
-
-                                # Resuelve conflictos del Jenkinsfile priorizando master
-                                git checkout --theirs Jenkinsfile || true
-                                git add Jenkinsfile
-
-                                # Commit merge (solo si hay cambios)
-                                git diff --cached --quiet || git commit -m "Merge develop into master [ci skip]"
-
-                                # Push a master usando credenciales
-                                git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
-                            '''
-                        }
-                    } else {
-                        echo "No estamos en la rama develop. Promote saltado."
+                    withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
+                        sh '''
+                            echo "Haciendo merge de develop a master..."
+                            git config user.name "danielcch"
+                            git config user.email "daniel.camacho215@comunidadunir.net"
+                            git reset --hard
+                            git clean -fd
+                            git checkout master
+                            git pull origin master
+                            git merge --strategy=recursive -X theirs develop || true
+                            git checkout --theirs Jenkinsfile || true
+                            git add Jenkinsfile
+                            git diff --cached --quiet || git commit -m "Mergeo de develop a master [ci skip]"
+                            git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
+                        '''
                     }
                 }
             }
         }
+    }
+
+    post {
         always {
+            echo 'Pipeline terminado.'
             cleanWs()
+        }
+        success {
+            echo 'Despliegue en producción completado correctamente.'
+        }
+        failure {
+            echo 'Fallo en el despliegue de producción.'
         }
     }
 }
