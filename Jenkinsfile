@@ -6,16 +6,15 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Master') {
+        stage('Clean Workspace') {
             steps {
-                checkout scm
-                script {
-                    def branchName = sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    echo "Rama actual detectada: ${branchName}"
-                    if (branchName != "master") {
-                        error("No estamos en master, se para el pipeline.")
-                    }
-                }
+                cleanWs()
+            }
+        }
+        stage('Checkout') {
+            steps {
+                git branch: 'master',
+                    url: 'https://github.com/danielcch/todo-list-aws.git',
             }
         }
         stage('AWS SAM DEPLOY') {
