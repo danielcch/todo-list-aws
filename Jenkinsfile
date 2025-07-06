@@ -69,21 +69,16 @@ pipeline {
         }
         stage('Check AWS Credentials') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jenkins_aws'
-                ]]) {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
+                    string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
+                ]) {
                     sh 'aws sts get-caller-identity'
                 }
             }
         }
 
-        withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'jenkins_aws'],
-            string(credentialsId: 'aws_session_token', variable: 'AWS_SESSION_TOKEN')
-        ]) {
-            sh 'aws sts get-caller-identity'
-        }
+
     
     }
 }
