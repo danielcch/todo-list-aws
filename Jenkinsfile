@@ -1,10 +1,5 @@
 pipeline {
     agent { label 'agente1' }
-    
-    triggers {
-        // Se dispara automáticamente cuando hay un push a master
-        pollSCM('H/5 * * * *')
-    }
 
     environment {
         AWS_DEFAULT_REGION = 'us-east-1'
