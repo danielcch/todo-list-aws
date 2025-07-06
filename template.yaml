@@ -24,7 +24,7 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref TodosDynamoDbTable
         ENDPOINT_OVERRIDE: ""
-    
+  
 Resources:
   
   CreateTodoFunction:
