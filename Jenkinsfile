@@ -16,7 +16,7 @@ pipeline {
             steps {
                 git branch: 'develop',
                     url: 'https://github.com/danielcch/todo-list-aws.git',
-                    credentialsId: 'GitHub_token' //con to ken para luego hacer push
+                    credentialsId: 'GitHub_token' //con token para luego hacer push
             }
         }
 
@@ -63,6 +63,7 @@ pipeline {
                 }
             }
         }
+
         stage('Etapa analisis estatico') {
             steps {
                 echo 'Analisis codigo estatico (flake8)...'
@@ -96,6 +97,7 @@ pipeline {
                 }
             }
         }
+
         stage('Etapa AWS SAM Deploy') {
             steps {
                 echo 'Desplegando con SAM AWS...'
@@ -113,7 +115,6 @@ pipeline {
                     '''
                 }
             }
-        
         }
 
         stage('Estata test de integracion') {
@@ -164,13 +165,11 @@ pipeline {
                 }
             }
         }
-    }
 
         stage('Etapa promote') {
             steps {
                 echo 'Promote a master (mergear develop a master)...'
                 script {
-                    // Detectar la rama actual dinámicamente
                     def branchName = sh(
                         script: 'git rev-parse --abbrev-ref HEAD',
                         returnStdout: true
@@ -179,36 +178,19 @@ pipeline {
 
                     if (branchName == 'develop') {
                         echo "Rama develop detectada, ejecutando Promote..."
-
                         withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
                             sh '''
                                 echo "Haciendo merge de develop a master..."
-
-                                # Configura user Git
                                 git config user.name "danielcch"
                                 git config user.email "daniel.camacho215@comunidadunir.net"
-
-                                # DESCARTA cambios locales y limpia archivos no versionados
                                 git reset --hard
                                 git clean -fd
-                                
-                                # Cambia a master
                                 git checkout master
-
-                                # Trae los últimos cambios
                                 git pull origin master
-
-                                # Merge con estrategia que prioriza master en conflictos
                                 git merge --strategy=recursive -X theirs develop || true
-
-                                # Resuelve conflictos del Jenkinsfile priorizando master
                                 git checkout --theirs Jenkinsfile || true
                                 git add Jenkinsfile
-
-                                # Commit merge (solo si hay cambios)
                                 git diff --cached --quiet || git commit -m "Mergeo de develop a master [ci skip]"
-
-                                # Push a master usando credenciales
                                 git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
                             '''
                         }
@@ -219,6 +201,7 @@ pipeline {
             }
         }
     }
+
     post {
         always {
             echo 'Pipeline terminado.'
