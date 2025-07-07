@@ -39,33 +39,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Promote a Production') {
-            when {
-                branch 'master'
-            }
-            steps {
-                echo "Promoviendo a producción..."
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'github', usernameVariable: 'GIT_USERNAME', passwordVariable: 'GIT_PASSWORD')]) {
-                        sh '''
-                            echo "Haciendo merge de develop a master..."
-                            git config user.name "danielcch"
-                            git config user.email "daniel.camacho215@comunidadunir.net"
-                            git reset --hard
-                            git clean -fd
-                            git checkout master
-                            git pull origin master
-                            git merge --strategy=recursive -X theirs develop || true
-                            git checkout --theirs Jenkinsfile || true
-                            git add Jenkinsfile
-                            git diff --cached --quiet || git commit -m "Mergeo de develop a master [ci skip]"
-                            git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/danielcch/todo-list-aws.git HEAD:master
-                        '''
-                    }
-                }
-            }
-        }
     }
 
     post {
