@@ -15,7 +15,7 @@ pipeline {
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
                 git branch: 'develop',
                     url: 'https://github.com/danielcch/todo-list-aws.git',
-                    credentialsId: 'GitHub_token'
+                    credentialsId: 'github'
                 stash name: 'source', includes: '**/*', useDefaultExcludes: false
             }
         }
