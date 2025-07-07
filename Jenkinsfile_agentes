@@ -219,18 +219,21 @@ pipeline {
                 }
             }
         }
-    }
-    post {
-        always {
-            node {
-                echo 'Pipeline terminado.'
+
+        stage('Cleanup Workspace') {
+            agent { label 'Agente2' }
+            steps {
+                sh 'echo "==> Limpiando workspace en $(whoami)@$(hostname)"'
                 cleanWs()
             }
         }
+    }
+    post {
+        always {
+            echo 'Pipeline terminado.'
+        }
         failure {
-            node {
-                echo 'Fallo Pipeline.'
-            }
+            echo 'Fallo Pipeline.'
         }
     }
 }
