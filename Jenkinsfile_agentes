@@ -16,8 +16,7 @@ pipeline {
                 git branch: 'develop',
                     url: 'https://github.com/danielcch/todo-list-aws.git',
                     credentialsId: 'github'
-                stash name: 'source', includes: '**/*, .git/**', useDefaultExcludes: false
-            }
+            stash  name: 'source', includes: '**/*', excludes: '.git/**', useDefaultExcludes: false            }
         }
         stage('Etapa test unitario') {
             agent { label 'Agente3' }
