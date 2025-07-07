@@ -2,7 +2,7 @@ pipeline {
     agent none
     stages {
         stage('Limpiando Workspace') {
-            agent { label 'agente2' }
+            agent { label 'Agente2' }
             steps {
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
                 echo 'Cleaning workspace...'
@@ -10,17 +10,17 @@ pipeline {
             }
         }
         stage('Checkout') {
-            agent { label 'agente2' }
+            agent { label 'Agente2' }
             steps {
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
                 git branch: 'develop',
                     url: 'https://github.com/danielcch/todo-list-aws.git',
                     credentialsId: 'github'
-                stash name: 'source', includes: '**/*', useDefaultExcludes: false
+                stash name: 'source', includes: '**/*, .git/**', useDefaultExcludes: false
             }
         }
         stage('Etapa test unitario') {
-            agent { label 'agente3' }
+            agent { label 'Agente3' }
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
             }
@@ -45,7 +45,7 @@ pipeline {
             }
         }
         stage('Etapa cobertura') {
-            agent { label 'agente3' }
+            agent { label 'Agente3' }
             environment {
                 DYNAMODB_TABLE = 'todoTableTest'
             }
@@ -70,7 +70,7 @@ pipeline {
             }
         }
         stage('Etapa analisis estatico') {
-            agent { label 'agente3' }
+            agent { label 'Agente3' }
             steps {
                 unstash 'source'
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
@@ -90,7 +90,7 @@ pipeline {
             }
         }
         stage('Etapa analisis seguridad') {
-            agent { label 'agente3' }
+            agent { label 'Agente3' }
             steps {
                 unstash 'source'
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
@@ -110,7 +110,7 @@ pipeline {
             }
         }
         stage('Etapa AWS SAM Deploy') {
-            agent { label 'agente1' }
+            agent { label 'Agente1' }
             steps {
                 unstash 'source'
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
@@ -132,7 +132,7 @@ pipeline {
             }
         }
         stage('Etapa test de integracion') {
-            agent { label 'agente2' }
+            agent { label 'Agente2' }
             steps {
                 unstash 'source'
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
@@ -183,7 +183,7 @@ pipeline {
             }
         }
         stage('Promote a Production') {
-            agent { label 'agente2' }
+            agent { label 'Agente2' }
             steps {
                 unstash 'source'
                 sh 'echo "==> Ejecutando en $(whoami)@$(hostname)"'
